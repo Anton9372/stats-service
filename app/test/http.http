@@ -1,0 +1,7 @@
+
+GET http://localhost:8080/api/operations
+
+
+### Get list with sorting
+#########################################sort_by=field&sort_order=asc/desc
+GET http://localhost:8080/api/operations?sort_by=description&sort_order=asc
