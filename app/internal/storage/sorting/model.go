@@ -1,6 +1,8 @@
-package storage
+package sorting
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type sortOptions struct {
 	Field, Order string

@@ -2,10 +2,6 @@ package entity
 
 import "time"
 
-//By category type
-//By category
-//By date
-
 type CategoryType string
 
 const (
@@ -26,4 +22,29 @@ type Operation struct {
 	Description  string    `json:"description"`
 	MoneySum     float64   `json:"money_sum"`
 	DateTime     time.Time `json:"date_time"`
+}
+
+// columns in public.operations
+const (
+	UUID         = "id"
+	CategoryUUID = "category_id"
+	Description  = "description"
+	MoneySum     = "money_sum"
+	DateTime     = "date_time"
+)
+
+type Report struct {
+	TotalMoneySum float64     `json:"total_money_sum"`
+	Operations    []Operation `json:"operations"`
+}
+
+func NewReport(operations []Operation) Report {
+	sum := 0.0
+	for _, op := range operations {
+		sum += op.MoneySum
+	}
+	return Report{
+		TotalMoneySum: sum,
+		Operations:    operations,
+	}
 }

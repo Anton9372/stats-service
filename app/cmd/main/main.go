@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"os"
 	"stats-service/internal/config"
-	"stats-service/internal/operations/db"
-	"stats-service/internal/operations/handler"
-	"stats-service/internal/operations/service"
+	"stats-service/internal/controller"
+	"stats-service/internal/domain/service"
+	"stats-service/internal/storage/db"
 	"stats-service/pkg/logging"
 	"stats-service/pkg/metric"
 	"stats-service/pkg/postgresql"
@@ -41,7 +41,7 @@ func main() {
 	}
 	myStorage := db.NewRepository(postgresClient, logger)
 	myService := service.NewService(myStorage, logger)
-	myHandler := handler.NewHandler(myService, logger)
+	myHandler := controller.NewHandler(myService, logger)
 	myHandler.Register(router)
 
 	logger.Info("start application")

@@ -12,10 +12,6 @@ const (
 	OptionsContextKey = "sort_options"
 )
 
-type Options struct {
-	Field, Order string
-}
-
 func Middleware(h http.HandlerFunc, defaultSortField, defaultSortOrder string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sortBy := r.URL.Query().Get("sort_by")
@@ -31,7 +27,7 @@ func Middleware(h http.HandlerFunc, defaultSortField, defaultSortOrder string) h
 			upperSortOrder := strings.ToUpper(sortOrder)
 			if upperSortOrder != ASC && upperSortOrder != DESC {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("bad sort order"))
+				_, _ = w.Write([]byte("invalid sort order"))
 				return
 			}
 		}

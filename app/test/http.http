@@ -1,7 +1,11 @@
-
+### Get list
 GET http://localhost:8080/api/operations
-
 
 ### Get list with sorting
 #########################################sort_by=field&sort_order=asc/desc
 GET http://localhost:8080/api/operations?sort_by=description&sort_order=asc
+
+### Get list wit filter
+// number_field=lt/gt/lte/gte/eq:value
+// date_field=2020-03-10, date_field=2011-09-30:2011-11-02
+GET http://localhost:8080/api/operations?smoney_sum=10
