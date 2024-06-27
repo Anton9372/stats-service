@@ -24,9 +24,12 @@ type Operation struct {
 	DateTime     time.Time `json:"date_time"`
 }
 
-// columns in public.operations
+// db columns for filter by and sort by
 const (
-	UUID         = "id"
+	UserUUID       = "user_uuid"
+	CategoryName   = "category_name"
+	TypeOfCategory = "type"
+
 	CategoryUUID = "category_id"
 	Description  = "description"
 	MoneySum     = "money_sum"

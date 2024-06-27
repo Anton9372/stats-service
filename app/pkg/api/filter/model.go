@@ -2,6 +2,9 @@ package filter
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const (
@@ -49,6 +52,9 @@ func (o *options) AddField(name, operator, value, dataType string) error {
 	if err := validateOperator(operator); err != nil {
 		return err
 	}
+	if err := validateValue(value, dataType); err != nil {
+		return err
+	}
 	o.fields = append(o.fields, Field{
 		Name:     name,
 		Value:    value,
@@ -72,4 +78,26 @@ func validateOperator(operator string) error {
 		return fmt.Errorf("invalid operator: %s", operator)
 	}
 	return nil
+}
+
+func validateValue(value, dataType string) error {
+	switch dataType {
+	case DataTypeString:
+		return nil
+	case DataTypeFloat:
+		if _, err := strconv.ParseFloat(value, 64); err != nil {
+			return fmt.Errorf("failed converting value to number")
+		}
+		return nil
+	case DataTypeDate:
+		split := strings.Split(value, ":")
+		_, err0 := time.Parse(time.DateOnly, split[0])
+		_, err1 := time.Parse(time.DateOnly, split[1])
+		if err0 != nil || err1 != nil {
+			return fmt.Errorf("date should be in format %s or %s:%s", time.DateOnly, time.DateOnly, time.DateOnly)
+		}
+		return nil
+	default:
+		return fmt.Errorf("invalid data type: %s", dataType)
+	}
 }

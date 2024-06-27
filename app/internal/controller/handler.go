@@ -11,9 +11,7 @@ import (
 	"stats-service/pkg/api/sort"
 	"stats-service/pkg/logging"
 	"stats-service/pkg/utils"
-	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -49,11 +47,60 @@ func (h *handler) GetOperations(w http.ResponseWriter, r *http.Request) error {
 
 	filterOptions := r.Context().Value(filter.OptionsContextKey).(filter.Options)
 
+	validationErr := apperror.BadRequestError("filter params validation failed")
+
+	userUUID := r.URL.Query().Get(entity.UserUUID)
+	if userUUID != "" {
+		err := filterOptions.AddField(entity.UserUUID, filter.OperatorEqual, userUUID, filter.DataTypeString)
+		if err != nil {
+			validationErr.WithParams(map[string]string{
+				entity.UserUUID: err.Error(),
+			})
+			return validationErr
+		}
+	}
+
+	categoryName := r.URL.Query().Get(entity.CategoryName)
+	if categoryName != "" {
+		err := filterOptions.AddField(entity.CategoryName, filter.OperatorSubString, categoryName, filter.DataTypeString)
+		if err != nil {
+			validationErr.WithParams(map[string]string{
+				entity.CategoryName: err.Error(),
+			})
+			return validationErr
+		}
+	}
+
+	categoryType := r.URL.Query().Get(entity.TypeOfCategory)
+	if categoryType != "" {
+		err := filterOptions.AddField(entity.TypeOfCategory, filter.OperatorEqual, categoryType, filter.DataTypeString)
+		if err != nil {
+			validationErr.WithParams(map[string]string{
+				entity.TypeOfCategory: err.Error(),
+			})
+			return validationErr
+		}
+	}
+
 	categoryUUID := r.URL.Query().Get(entity.CategoryUUID)
 	if categoryUUID != "" {
-		err := filterOptions.AddField(entity.CategoryUUID, filter.OperatorEqual, categoryUUID, filter.DataTypeFloat)
+		err := filterOptions.AddField(entity.CategoryUUID, filter.OperatorEqual, categoryUUID, filter.DataTypeString)
 		if err != nil {
-			return apperror.BadRequestError(err.Error())
+			validationErr.WithParams(map[string]string{
+				entity.CategoryUUID: err.Error(),
+			})
+			return validationErr
+		}
+	}
+
+	description := r.URL.Query().Get(entity.Description)
+	if description != "" {
+		err := filterOptions.AddField(entity.Description, filter.OperatorSubString, description, filter.DataTypeString)
+		if err != nil {
+			validationErr.WithParams(map[string]string{
+				entity.Description: err.Error(),
+			})
+			return validationErr
 		}
 	}
 
@@ -68,49 +115,29 @@ func (h *handler) GetOperations(w http.ResponseWriter, r *http.Request) error {
 			value = split[1]
 		}
 
-		_, err := strconv.ParseFloat(value, 64)
+		err := filterOptions.AddField(entity.MoneySum, operator, value, filter.DataTypeFloat)
 		if err != nil {
-			validationErr := apperror.BadRequestError("filter params validation failed")
 			validationErr.WithParams(map[string]string{
-				"money_sum": "this field should be a number",
+				entity.MoneySum: err.Error(),
 			})
 			return validationErr
-		}
-
-		err = filterOptions.AddField(entity.MoneySum, operator, value, filter.DataTypeFloat)
-		if err != nil {
-			return apperror.BadRequestError(err.Error())
 		}
 	}
 
 	dateTime := r.URL.Query().Get(entity.DateTime)
 	if dateTime != "" {
 		operator := filter.OperatorBetween
-		var err error
 
-		if strings.Index(dateTime, ":") != -1 {
-			split := strings.Split(dateTime, ":")
-			dateBegin := split[0]
-			dateEnd := split[1]
-
-			_, err = time.Parse(time.DateOnly, dateBegin)
-			_, err = time.Parse(time.DateOnly, dateEnd)
-		} else {
-			_, err = time.Parse(time.DateOnly, dateTime)
+		if strings.Index(dateTime, ":") == -1 {
 			dateTime = fmt.Sprintf("%s:%s", dateTime, dateTime)
 		}
 
+		err := filterOptions.AddField(entity.DateTime, operator, dateTime, filter.DataTypeDate)
 		if err != nil {
-			validationErr := apperror.BadRequestError("filter params validation failed")
 			validationErr.WithParams(map[string]string{
-				"date_time": fmt.Sprintf("date should be in format: %s", time.DateOnly),
+				entity.DateTime: err.Error(),
 			})
 			return validationErr
-		}
-
-		err = filterOptions.AddField(entity.DateTime, operator, dateTime, filter.DataTypeDate)
-		if err != nil {
-			return apperror.BadRequestError(err.Error())
 		}
 	}
 

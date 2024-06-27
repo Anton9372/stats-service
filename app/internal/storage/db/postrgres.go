@@ -46,6 +46,8 @@ func handleSQLError(err error, logger *logging.Logger) error {
 
 		if pgErr.Code == "23505" { //uniqueness violation
 			return apperror.BadRequestError("")
+		} else if pgErr.Code == "22P02" { //invalid uuid syntax
+			return apperror.ErrNotFound
 		}
 		return newErr
 	}
@@ -53,54 +55,57 @@ func handleSQLError(err error, logger *logging.Logger) error {
 	return err
 }
 
-func processFilterOptionsWithSquirrel(qb squirrel.SelectBuilder, options filter.Options) (squirrel.SelectBuilder, error) {
+func processFilterOptionsWithSquirrel(qb squirrel.SelectBuilder, options filter.Options) squirrel.SelectBuilder {
 	fields := options.Fields()
 
 	for _, field := range fields {
-		switch field.Operator {
-		case filter.OperatorEqual:
-			qb = qb.Where(squirrel.Eq{field.Name: field.Value})
-		case filter.OperatorNotEqual:
-			qb = qb.Where(squirrel.NotEq{field.Name: field.Value})
-		case filter.OperatorLowerThan:
-			qb = qb.Where(squirrel.Lt{field.Name: field.Value})
-		case filter.OperatorLowerThanEqual:
-			qb = qb.Where(squirrel.LtOrEq{field.Name: field.Value})
-		case filter.OperatorGreaterThan:
-			qb = qb.Where(squirrel.Gt{field.Name: field.Value})
-		case filter.OperatorGreaterThanEqual:
-			qb = qb.Where(squirrel.GtOrEq{field.Name: field.Value})
-		case filter.OperatorBetween:
-			values := strings.Split(field.Value, ":")
-			if len(values) != 2 {
-				return qb, fmt.Errorf("between operator requires two values")
+		switch field.Name {
+		case entity.UserUUID:
+			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.user_id": field.Value})
+		case entity.CategoryName:
+			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Like{"c.name": "%" + field.Value + "%"})
+		case entity.TypeOfCategory:
+			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.type": field.Value})
+		case entity.CategoryUUID:
+			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.id": field.Value})
+		case entity.Description:
+			qb = qb.Where(squirrel.Like{"description": "%" + field.Value + "%"})
+		case entity.MoneySum:
+			switch field.Operator {
+			case filter.OperatorEqual:
+				qb = qb.Where(squirrel.Eq{field.Name: field.Value})
+			case filter.OperatorNotEqual:
+				qb = qb.Where(squirrel.NotEq{field.Name: field.Value})
+			case filter.OperatorLowerThan:
+				qb = qb.Where(squirrel.Lt{field.Name: field.Value})
+			case filter.OperatorLowerThanEqual:
+				qb = qb.Where(squirrel.LtOrEq{field.Name: field.Value})
+			case filter.OperatorGreaterThan:
+				qb = qb.Where(squirrel.Gt{field.Name: field.Value})
+			case filter.OperatorGreaterThanEqual:
+				qb = qb.Where(squirrel.GtOrEq{field.Name: field.Value})
 			}
+		case entity.DateTime:
+			dates := strings.Split(field.Value, ":")
 			qb = qb.Where(squirrel.Expr(fmt.Sprintf("%s BETWEEN ? AND ?", field.Name),
-				fmt.Sprintf("%s 00:00:00", values[0]), fmt.Sprintf("%s 23:59:59", values[1])))
-		case filter.OperatorSubString:
-			qb = qb.Where(squirrel.Like{field.Name: "%" + field.Value + "%"})
-		default:
-			return qb, fmt.Errorf("invalid operator: %s", field.Operator)
+				fmt.Sprintf("%s 00:00:00", dates[0]), fmt.Sprintf("%s 23:59:59", dates[1])))
 		}
 	}
 
 	qb = qb.PlaceholderFormat(squirrel.Dollar)
-	return qb, nil
+	return qb
 }
 
 func (r *repository) FindAll(ctx context.Context, sortOptions sorting.SortOptions, filterOptions filter.Options) ([]entity.Operation, error) {
 	var err error
-	qb := squirrel.Select("id, category_id, money_sum, description, date_time").From("public.operations")
+	qb := squirrel.Select("o.id, o.category_id, o.money_sum, o.description, o.date_time").From("public.operations o")
 
 	if sortOptions != nil {
 		qb = qb.OrderBy(sortOptions.GetOrderBy())
 	}
 
 	if filterOptions != nil {
-		qb, err = processFilterOptionsWithSquirrel(qb, filterOptions)
-		if err != nil {
-			return nil, err
-		}
+		qb = processFilterOptionsWithSquirrel(qb, filterOptions)
 	}
 
 	sql, i, err := qb.ToSql()
@@ -122,13 +127,13 @@ func (r *repository) FindAll(ctx context.Context, sortOptions sorting.SortOption
 		var op entity.Operation
 		err = rows.Scan(&op.UUID, &op.CategoryUUID, &op.MoneySum, &op.Description, &op.DateTime)
 		if err != nil {
-			return nil, err
+			return nil, handleSQLError(err, r.logger)
 		}
 		operations = append(operations, op)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, handleSQLError(err, r.logger)
 	}
 
 	return operations, nil

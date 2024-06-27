@@ -25,7 +25,10 @@ func NewService(repository Repository, logger *logging.Logger) controller.Servic
 
 func (s *service) GetAll(ctx context.Context, sortOptions sort.Options, filterOptions filter.Options) (entity.Report, error) {
 	var report entity.Report
-	sortOpt := sorting.NewSortOptions(sortOptions.Field, sortOptions.Order)
+	sortOpt, err := sorting.NewSortOptions(sortOptions.Field, sortOptions.Order)
+	if err != nil {
+		return report, err
+	}
 
 	operations, err := s.repository.FindAll(ctx, sortOpt, filterOptions)
 	if err != nil {
