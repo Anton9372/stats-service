@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"net"
 	"net/http"
 	"os"
+	_ "stats-service/docs"
 	"stats-service/internal/config"
 	"stats-service/internal/controller"
 	"stats-service/internal/domain/service"
@@ -20,6 +22,17 @@ import (
 	"time"
 )
 
+//	@title			Stats-service API
+//	@version		1.0
+//	@description	Statistics service for finance-manager application
+
+// @contact.name	Anton
+// @contact.email	ap363402@gmail.com
+
+// @license.name Apache 2.0
+
+// @host localhost:8080
+// @BasePath /api
 func main() {
 	logging.InitLogger()
 	logger := logging.GetLogger()
@@ -30,6 +43,10 @@ func main() {
 
 	logger.Info("router initializing")
 	router := httprouter.New()
+
+	logger.Info("swagger docs initializing")
+	router.Handler(http.MethodGet, "/swagger", http.RedirectHandler("/swagger/index.html", http.StatusMovedPermanently))
+	router.Handler(http.MethodGet, "/swagger/*any", httpSwagger.WrapHandler)
 
 	metricHandler := metric.Handler{Logger: logger}
 	metricHandler.Register(router)
@@ -71,7 +88,7 @@ func start(router http.Handler, logger *logging.Logger, cfg *config.Config) {
 
 	logger.Info("application initialized and started")
 
-	if err := server.Serve(listener); err != nil {
+	if err = server.Serve(listener); err != nil {
 		switch {
 		case errors.Is(err, http.ErrServerClosed):
 			logger.Warn("server shutdown")

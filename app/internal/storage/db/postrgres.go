@@ -15,7 +15,6 @@ import (
 	"stats-service/pkg/logging"
 	"stats-service/pkg/postgresql"
 	"stats-service/pkg/utils"
-	"strings"
 	"time"
 )
 
@@ -61,34 +60,50 @@ func processFilterOptionsWithSquirrel(qb squirrel.SelectBuilder, options filter.
 	for _, field := range fields {
 		switch field.Name {
 		case entity.UserUUID:
-			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.user_id": field.Value})
+			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.user_id": field.Values[0]})
+
 		case entity.CategoryName:
-			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Like{"c.name": "%" + field.Value + "%"})
+			for _, value := range field.Values {
+				qb = qb.Where(squirrel.Like{"c.name": "%" + value + "%"})
+			}
+
 		case entity.TypeOfCategory:
-			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.type": field.Value})
+			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.type": field.Values})
+
 		case entity.CategoryUUID:
-			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.id": field.Value})
+			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.id": field.Values})
+
 		case entity.Description:
-			qb = qb.Where(squirrel.Like{"description": "%" + field.Value + "%"})
+			for _, value := range field.Values {
+				qb = qb.Where(squirrel.Like{"description": "%" + value + "%"})
+			}
+
 		case entity.MoneySum:
 			switch field.Operator {
 			case filter.OperatorEqual:
-				qb = qb.Where(squirrel.Eq{field.Name: field.Value})
+				qb = qb.Where(squirrel.Eq{field.Name: field.Values})
 			case filter.OperatorNotEqual:
-				qb = qb.Where(squirrel.NotEq{field.Name: field.Value})
+				qb = qb.Where(squirrel.NotEq{field.Name: field.Values})
 			case filter.OperatorLowerThan:
-				qb = qb.Where(squirrel.Lt{field.Name: field.Value})
+				qb = qb.Where(squirrel.Lt{field.Name: field.Values[0]})
 			case filter.OperatorLowerThanEqual:
-				qb = qb.Where(squirrel.LtOrEq{field.Name: field.Value})
+				qb = qb.Where(squirrel.LtOrEq{field.Name: field.Values[0]})
 			case filter.OperatorGreaterThan:
-				qb = qb.Where(squirrel.Gt{field.Name: field.Value})
+				qb = qb.Where(squirrel.Gt{field.Name: field.Values[0]})
 			case filter.OperatorGreaterThanEqual:
-				qb = qb.Where(squirrel.GtOrEq{field.Name: field.Value})
+				qb = qb.Where(squirrel.GtOrEq{field.Name: field.Values[0]})
+			case filter.OperatorBetween:
+				qb = qb.Where(squirrel.Expr(fmt.Sprintf("%s BETWEEN ? AND ?", field.Name),
+					field.Values[0], field.Values[1]))
 			}
+
 		case entity.DateTime:
-			dates := strings.Split(field.Value, ":")
+			if len(field.Values) == 1 {
+				field.Values = append(field.Values, field.Values[0])
+			}
+
 			qb = qb.Where(squirrel.Expr(fmt.Sprintf("%s BETWEEN ? AND ?", field.Name),
-				fmt.Sprintf("%s 00:00:00", dates[0]), fmt.Sprintf("%s 23:59:59", dates[1])))
+				fmt.Sprintf("%s 00:00:00", field.Values[0]), fmt.Sprintf("%s 23:59:59", field.Values[1])))
 		}
 	}
 

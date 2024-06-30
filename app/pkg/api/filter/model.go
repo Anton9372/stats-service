@@ -3,7 +3,6 @@ package filter
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -30,7 +29,7 @@ type options struct {
 type Field struct {
 	Name     string
 	Operator string
-	Value    string
+	Values   []string
 	DataType string
 }
 
@@ -48,19 +47,91 @@ func (o *options) Limit() int {
 	return o.limit
 }
 
-func (o *options) AddField(name, operator, value, dataType string) error {
-	if err := validateOperator(operator); err != nil {
-		return err
-	}
-	if err := validateValue(value, dataType); err != nil {
-		return err
-	}
-	o.fields = append(o.fields, Field{
+func (o *options) AddField(name, operator string, values []string, dataType string) error {
+	field := Field{
 		Name:     name,
-		Value:    value,
+		Values:   values,
 		Operator: operator,
 		DataType: dataType,
-	})
+	}
+
+	if err := validateField(field); err != nil {
+		return err
+	}
+
+	o.fields = append(o.fields, field)
+	return nil
+}
+
+func validateField(field Field) error {
+	if err := validateOperator(field.Operator); err != nil {
+		return err
+	}
+
+	for _, value := range field.Values {
+		if err := validateValue(value, field.DataType); err != nil {
+			return err
+		}
+	}
+
+	if err := validateOperatorAndDataType(field.Operator, field.DataType); err != nil {
+		return err
+	}
+
+	if err := validateOperatorAndValues(field.Operator, field.Values); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateOperatorAndValues(operator string, values []string) error {
+	switch operator {
+	case OperatorEqual:
+	case OperatorNotEqual:
+	case OperatorLowerThan:
+		if len(values) > 1 {
+			return fmt.Errorf("with the '%s' operator only one value can be used", OperatorLowerThan)
+		}
+	case OperatorLowerThanEqual:
+		if len(values) > 1 {
+			return fmt.Errorf("with the '%s' operator only one value can be used", OperatorLowerThanEqual)
+		}
+	case OperatorGreaterThan:
+		if len(values) > 1 {
+			return fmt.Errorf("with the '%s' operator only one value can be used", OperatorGreaterThan)
+		}
+	case OperatorGreaterThanEqual:
+		if len(values) > 1 {
+			return fmt.Errorf("with the '%s' operator only one value can be used", OperatorGreaterThanEqual)
+		}
+	case OperatorBetween:
+		if len(values) != 2 {
+			return fmt.Errorf("with the '%s' operator two values should be used", OperatorBetween)
+		}
+	case OperatorSubString:
+		if len(values) > 1 {
+			return fmt.Errorf("with the '%s' operator only one value can be used", OperatorSubString)
+		}
+	}
+	return nil
+}
+
+func validateOperatorAndDataType(operator, dataType string) error {
+	switch dataType {
+	case DataTypeString:
+		if operator != OperatorEqual && operator != OperatorSubString {
+			return fmt.Errorf("with the string data type only the '=' and '%s' operator can be used", OperatorSubString)
+		}
+	case DataTypeFloat:
+		if operator == OperatorSubString {
+			return fmt.Errorf("with the float data type the '%s' operator can not be used", OperatorSubString)
+		}
+	case DataTypeDate:
+		if operator != OperatorEqual && operator != OperatorBetween {
+			return fmt.Errorf("with the date data type only the '=' and '%s' operator can be used", OperatorBetween)
+		}
+	}
 	return nil
 }
 
@@ -90,11 +161,9 @@ func validateValue(value, dataType string) error {
 		}
 		return nil
 	case DataTypeDate:
-		split := strings.Split(value, ":")
-		_, err0 := time.Parse(time.DateOnly, split[0])
-		_, err1 := time.Parse(time.DateOnly, split[1])
-		if err0 != nil || err1 != nil {
-			return fmt.Errorf("date should be in format %s or %s:%s", time.DateOnly, time.DateOnly, time.DateOnly)
+		_, err := time.Parse(time.DateOnly, value)
+		if err != nil {
+			return fmt.Errorf("date should be in format %s", time.DateOnly)
 		}
 		return nil
 	default:

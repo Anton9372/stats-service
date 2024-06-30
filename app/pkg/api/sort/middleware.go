@@ -3,7 +3,6 @@ package sort
 import (
 	"context"
 	"net/http"
-	"strings"
 )
 
 const (
@@ -23,13 +22,6 @@ func Middleware(h http.HandlerFunc, defaultSortField, defaultSortOrder string) h
 
 		if sortOrder == "" {
 			sortOrder = defaultSortOrder
-		} else {
-			upperSortOrder := strings.ToUpper(sortOrder)
-			if upperSortOrder != ASC && upperSortOrder != DESC {
-				w.WriteHeader(http.StatusBadRequest)
-				_, _ = w.Write([]byte("invalid sort order"))
-				return
-			}
 		}
 
 		options := Options{

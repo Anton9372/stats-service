@@ -1,0 +1,65 @@
+basePath: /api
+host: localhost:8080
+info:
+  contact:
+    email: ap363402@gmail.com
+    name: Anton
+  description: Statistics service for finance-manager application
+  license:
+    name: Apache 2.0
+  title: Stats-service API
+  version: "1.0"
+paths:
+  /api/operations:
+    get:
+      description: Retrieves a list of operations with support for filtering and sorting.
+      operationId: get-operations
+      parameters:
+      - description: User UUID
+        in: path
+        name: user_uuid
+        type: string
+      - description: Category name
+        in: path
+        name: category_name
+        type: string
+      - description: Category type
+        in: path
+        name: query
+        type: string
+      - description: Category ID
+        in: path
+        name: category_id
+        type: string
+      - description: Description
+        in: path
+        name: description
+        type: string
+      - description: 'Money sum (supports operators for numbers: eq, neq, lt, lte,
+          gt, gte)'
+        in: path
+        name: money_sum
+        type: string
+      - description: 'Date and time of operation (supports formats: yyyy-mm-dd, yyyy-mm-dd:yyyy-mm-dd)'
+        in: path
+        name: date_time
+        type: string
+      - description: Field to sort by (money_sum, date_time, description)
+        in: path
+        name: sort_by
+        type: string
+      - description: Sort order (asc, desc)
+        in: path
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of operations
+          schema:
+            type: string
+      summary: Get operations
+      tags:
+      - Operations
+swagger: "2.0"
