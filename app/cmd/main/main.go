@@ -22,17 +22,17 @@ import (
 	"time"
 )
 
-//	@title			Stats-service API
-//	@version		1.0
-//	@description	Statistics service for finance-manager application
+// @Title		Stats-service API
+// @Version		1.0
+// @Description	Statistics service for finance-manager application
 
-// @contact.name	Anton
-// @contact.email	ap363402@gmail.com
+// @Contact.name	Anton
+// @Contact.email	ap363402@gmail.com
 
-// @license.name Apache 2.0
+// @License.name Apache 2.0
 
-// @host localhost:8080
-// @BasePath /api
+// @Host 		localhost:10003
+// @BasePath 	/api
 func main() {
 	logging.InitLogger()
 	logger := logging.GetLogger()

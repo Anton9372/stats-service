@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  app:
+    image: stats-service:local
+    container_name: ss-app
+    ports:
+      - "10003:10003"
+    networks:
+      - ss
+      - os
+
+networks:
+  ss:
+  os:
+    name: operation-service_os
+    external: true

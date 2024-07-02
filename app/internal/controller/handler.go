@@ -39,19 +39,21 @@ func (h *handler) Register(router *httprouter.Router) {
 // @Summary 	Get operations
 // @Description Retrieves a list of operations with support for filtering and sorting.
 // @Tags 		Operations
-// @Id 			get-operations
 // @Produce 	json
 // @Param 		user_uuid 	  path 	   string false  "User UUID"
-// @Param 		category_name path 	   string false  "Category name"
-// @Param 		type query 	  path 	   string false  "Category type"
+// @Param 		category_name path 	   string false  "Category name (supports operators: substr)"
+// @Param 		type	 	  path 	   string false  "Category type"
 // @Param 		category_id   path 	   string false  "Category ID"
-// @Param 		description   path 	   string false  "Description"
-// @Param 		money_sum 	  path 	   string false  "Money sum (supports operators for numbers: eq, neq, lt, lte, gt, gte)"
-// @Param 		date_time     path 	   string false  "Date and time of operation (supports formats: yyyy-mm-dd, yyyy-mm-dd:yyyy-mm-dd)"
+// @Param 		description   path 	   string false  "Description (supports operators: substr)"
+// @Param 		money_sum 	  path 	   string false  "Money sum (supports operators: eq, neq, lt, lte, gt, gte, between)"
+// @Param 		date_time     path 	   string false  "Date and time of operation (supports operators: eq, between; format: yyyy-mm-dd)"
 // @Param 		sort_by 	  path 	   string false  "Field to sort by (money_sum, date_time, description)"
 // @Param 		sort_order 	  path 	   string false  "Sort order (asc, desc)"
-// @Success 	200 		  {object} string 		 "List of operations"
-// @Router /operations [get]
+// @Success 	200 		  {object} entity.Report "List of operations"
+// @Failure 	400 		  {object} apperror.AppError "Validation error in filter or sort parameters"
+// @Failure 	418 		  {object} apperror.AppError "Something wrong with application logic"
+// @Failure 	500 		  {object} apperror.AppError "Internal server error"
+// @Router /stats [get]
 func (h *handler) GetOperations(w http.ResponseWriter, r *http.Request) error {
 	h.logger.Info("Get operations")
 	defer utils.CloseBody(h.logger, r.Body)
@@ -61,9 +63,7 @@ func (h *handler) GetOperations(w http.ResponseWriter, r *http.Request) error {
 	if options, ok := r.Context().Value(sort.OptionsContextKey).(sort.Options); ok {
 		sortOptions = options
 	}
-	// @Failure 	400 		  {object} apperror "Validation error in filter or sort parameters"
-	// @Failure 	418 		  {object} apperror "Something wrong with application logic"
-	// @Failure 	500 		  {object} apperror "Internal server error"
+
 	filterOptions := r.Context().Value(filter.OptionsContextKey).(filter.Options)
 
 	var err error

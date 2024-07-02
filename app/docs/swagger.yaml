@@ -1,5 +1,49 @@
 basePath: /api
-host: localhost:8080
+definitions:
+  apperror.AppError:
+    properties:
+      code:
+        type: string
+      developer_message:
+        type: string
+      fields:
+        $ref: '#/definitions/apperror.ErrorFields'
+      message:
+        type: string
+      params:
+        $ref: '#/definitions/apperror.ErrorParams'
+    type: object
+  apperror.ErrorFields:
+    additionalProperties:
+      type: string
+    type: object
+  apperror.ErrorParams:
+    additionalProperties:
+      type: string
+    type: object
+  entity.Operation:
+    properties:
+      category_uuid:
+        type: string
+      date_time:
+        type: string
+      description:
+        type: string
+      money_sum:
+        type: number
+      uuid:
+        type: string
+    type: object
+  entity.Report:
+    properties:
+      operations:
+        items:
+          $ref: '#/definitions/entity.Operation'
+        type: array
+      total_money_sum:
+        type: number
+    type: object
+host: localhost:10003
 info:
   contact:
     email: ap363402@gmail.com
@@ -10,37 +54,45 @@ info:
   title: Stats-service API
   version: "1.0"
 paths:
-  /api/operations:
+  /metric:
+    get:
+      description: Checks that the server is up and running
+      responses:
+        "204":
+          description: No Content
+      summary: Heartbeat
+      tags:
+      - Heartbeat
+  /operations:
     get:
       description: Retrieves a list of operations with support for filtering and sorting.
-      operationId: get-operations
       parameters:
       - description: User UUID
         in: path
         name: user_uuid
         type: string
-      - description: Category name
+      - description: 'Category name (supports operators: substr)'
         in: path
         name: category_name
         type: string
       - description: Category type
         in: path
-        name: query
+        name: type
         type: string
       - description: Category ID
         in: path
         name: category_id
         type: string
-      - description: Description
+      - description: 'Description (supports operators: substr)'
         in: path
         name: description
         type: string
-      - description: 'Money sum (supports operators for numbers: eq, neq, lt, lte,
-          gt, gte)'
+      - description: 'Money sum (supports operators: eq, neq, lt, lte, gt, gte, between)'
         in: path
         name: money_sum
         type: string
-      - description: 'Date and time of operation (supports formats: yyyy-mm-dd, yyyy-mm-dd:yyyy-mm-dd)'
+      - description: 'Date and time of operation (supports operators: eq, between;
+          format: yyyy-mm-dd)'
         in: path
         name: date_time
         type: string
@@ -58,7 +110,19 @@ paths:
         "200":
           description: List of operations
           schema:
-            type: string
+            $ref: '#/definitions/entity.Report'
+        "400":
+          description: Validation error in filter or sort parameters
+          schema:
+            $ref: '#/definitions/apperror.AppError'
+        "418":
+          description: Something wrong with application logic
+          schema:
+            $ref: '#/definitions/apperror.AppError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/apperror.AppError'
       summary: Get operations
       tags:
       - Operations
