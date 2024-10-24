@@ -60,7 +60,7 @@ func processFilterOptionsWithSquirrel(qb squirrel.SelectBuilder, options filter.
 	for _, field := range fields {
 		switch field.Name {
 		case entity.UserUUID:
-			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.user_id": field.Values[0]})
+			qb = qb.Join("public.categories c1 ON o.category_id = c1.id").Where(squirrel.Eq{"c1.user_id": field.Values[0]})
 
 		case entity.CategoryName:
 			for _, value := range field.Values {
@@ -68,7 +68,7 @@ func processFilterOptionsWithSquirrel(qb squirrel.SelectBuilder, options filter.
 			}
 
 		case entity.TypeOfCategory:
-			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.type": field.Values})
+			qb = qb.Join("public.categories c2 ON o.category_id = c2.id").Where(squirrel.Eq{"c2.type": field.Values})
 
 		case entity.CategoryUUID:
 			qb = qb.Join("public.categories c ON o.category_id = c.id").Where(squirrel.Eq{"c.id": field.Values})
